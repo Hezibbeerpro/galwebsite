@@ -8,24 +8,20 @@
     <link rel="icon" href="https://upload.wikimedia.org/wikipedia/he/thumb/d/d4/Maccabi_Haifa_FC_logo_2020.svg/150px-Maccabi_Haifa_FC_logo_2020.svg.png" type="image/png">
     
     <style>
-        /* הגדרות צבעים - ירוק מכבי חיפה ולבן */
         :root {
             --maccabi-green: #007A33;
             --maccabi-white: #FFFFFF;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             padding: 0;
-            background-color: #f4f4f4; /* רקע כללי אפור בהיר כדי שהלבן יבלוט */
+            background-color: #f4f4f4;
             color: #333;
             display: flex;
             flex-direction: column;
-            min-height: 100vh; /* מבטיח שהפוטר יישאר למטה */
+            min-height: 100vh;
         }
-
-        /* עיצוב ההדר */
         header {
             background-color: var(--maccabi-green);
             color: var(--maccabi-white);
@@ -33,41 +29,16 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-
         .header-logo-name {
             display: flex;
             align-items: center;
             gap: 15px;
         }
-
-        .header-logo-name img {
-            height: 50px;
-            width: auto;
-        }
-
-        .header-logo-name a {
-            color: var(--maccabi-white);
-            text-decoration: none;
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        nav a {
-            color: var(--maccabi-white);
-            text-decoration: none;
-            margin-right: 20px;
-            font-size: 18px;
-            transition: opacity 0.3s;
-        }
-
-        nav a:hover {
-            opacity: 0.8;
-            text-decoration: underline;
-        }
-
-        /* אזור התוכן המשתנה */
+        .header-logo-name img { height: 50px; width: auto; }
+        .header-logo-name a { color: var(--maccabi-white); text-decoration: none; font-size: 24px; font-weight: bold; }
+        nav a { color: var(--maccabi-white); text-decoration: none; margin-right: 20px; font-size: 18px; }
+        nav a:hover { text-decoration: underline; }
         main {
             flex: 1;
             padding: 30px;
@@ -78,8 +49,6 @@
             border-radius: 8px;
             box-shadow: 0 0 10px rgba(0,0,0,0.05);
         }
-
-        /* עיצוב הפוטר */
         footer {
             background-color: var(--maccabi-green);
             color: var(--maccabi-white);
@@ -95,7 +64,7 @@
     <header>
         <div class="header-logo-name">
             <img src="https://upload.wikimedia.org/wikipedia/he/thumb/d/d4/Maccabi_Haifa_FC_logo_2020.svg/150px-Maccabi_Haifa_FC_logo_2020.svg.png" alt="מכבי חיפה">
-            <a href="/">גל באר</a>
+            <a href="/index.html">גל באר</a>
         </div>
         <nav>
             <a href="/movies.html">סרטים</a>
