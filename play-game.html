@@ -6,7 +6,6 @@
     <title>משחק נגיחות</title>
     
     <style>
-        /* איפוס שוליים והגדרת מסך מלא אמיתי (100vh) */
         body, html {
             margin: 0; padding: 0; width: 100%; height: 100%;
             background-color: #e9ecef; overflow: hidden; touch-action: none;
@@ -35,14 +34,13 @@
         #start-btn:active { background-color: #005a25; transform: scale(0.95); }
         
         #ball {
-            font-size: 70px; /* כדור מעט גדול יותר למסך מלא */
+            font-size: 70px;
             position: absolute; top: 0; left: 50%;
             cursor: pointer; user-select: none; transition: transform 0.1s; z-index: 5;
         }
         
         #ball:active { transform: scale(0.8); }
         
-        /* טבלת שיאים צפה (Modal) */
         #leaderboard {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
             background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 12px;
@@ -83,7 +81,11 @@
         let ballY = 0;
         let speed = 2;
         let gameLoop;
+        
+        // הגדרת קובצי השמע
         const hitSound = new Audio('hit.mp3');
+        const gameOverSound = new Audio('gameover.mp3');
+        
         const MAX_HIGH_SCORES = 5;
         let highScores = JSON.parse(localStorage.getItem('headingHighScores')) || [];
 
@@ -94,7 +96,6 @@
         const leaderboard = document.getElementById('leaderboard');
         const highScoreList = document.getElementById('high-score-list');
 
-        // פונקציה להצגת טבלת השיאים
         function showLeaderboard() {
             highScoreList.innerHTML = highScores.map(entry => 
                 `<li><span>${entry.name}</span> <span style="color:#007A33; font-weight:bold;">${entry.score}</span></li>`
@@ -106,7 +107,6 @@
             leaderboard.style.display = 'block';
         }
 
-        // הצגת הטבלה מיד בפתיחת המשחק
         showLeaderboard();
 
         function startGame() {
@@ -114,7 +114,7 @@
             speed = 3;
             scoreDisplay.innerText = score;
             startBtn.style.display = 'none';
-            leaderboard.style.display = 'none'; // הסתרת הטבלה בזמן משחק
+            leaderboard.style.display = 'none'; 
             ball.style.display = 'block';
             
             resetBall();
@@ -146,7 +146,7 @@
         });
 
         function hitBall() {
-            hitSound.currentTime = 0.1; // דילוג על השקט בתחילת הקובץ
+            hitSound.currentTime = 0.1; 
             hitSound.play().catch(e => console.log('Audio error:', e)); 
             
             score++;
@@ -161,9 +161,14 @@
             startBtn.style.display = 'inline-block';
             startBtn.innerText = 'שחק שוב';
 
+            // ניגון צליל הפסילה
+            gameOverSound.currentTime = 0;
+            gameOverSound.play().catch(e => console.log('Audio error:', e));
+
+            // השהיה של חצי שנייה (500 מילישניות) כדי שהסאונד יישמע לפני קפיצת החלון
             setTimeout(() => {
                 checkHighScore(score);
-            }, 100);
+            }, 500);
         }
 
         function checkHighScore(finalScore) {
@@ -182,7 +187,7 @@
             } else {
                 alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
             }
-            showLeaderboard(); // חזרה להצגת הטבלה בסיום
+            showLeaderboard(); 
         }
     </script>
 </body>
