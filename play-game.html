@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>משחק נגיחות</title>
+    
+    <style>
+        /* איפוס שוליים והגדרת מסך מלא אמיתי (100vh) */
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: #e9ecef; overflow: hidden; touch-action: none;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        #game-area {
+            width: 100vw; height: 100vh; position: relative;
+        }
+        
+        #ui-container {
+            position: absolute; top: 10%; width: 100%; text-align: center; z-index: 10;
+        }
+        
+        .score-board {
+            font-size: 32px; font-weight: bold; color: #007A33; 
+            text-shadow: 1px 1px 2px white; margin-bottom: 20px;
+        }
+        
+        #start-btn {
+            background-color: #007A33; color: white; border: none;
+            padding: 15px 40px; font-size: 24px; cursor: pointer; border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        
+        #start-btn:active { background-color: #005a25; transform: scale(0.95); }
+        
+        #ball {
+            font-size: 70px; /* כדור מעט גדול יותר למסך מלא */
+            position: absolute; top: 0; left: 50%;
+            cursor: pointer; user-select: none; transition: transform 0.1s; z-index: 5;
+        }
+        
+        #ball:active { transform: scale(0.8); }
+        
+        /* טבלת שיאים צפה (Modal) */
+        #leaderboard {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            background: rgba(255, 255, 255, 0.95); padding: 25px; border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); width: 80%; max-width: 350px;
+            text-align: right; z-index: 20; display: none; border: 3px solid #007A33;
+        }
+        
+        #leaderboard h3 { color: #007A33; text-align: center; margin-top: 0; font-size: 24px; }
+        #high-score-list { list-style: none; padding: 0; margin: 0; }
+        #high-score-list li { padding: 12px 0; border-bottom: 1px solid #ddd; display: flex; justify-content: space-between; font-size: 20px; }
+        #high-score-list li:last-child { border-bottom: none; }
+        
+        .close-btn {
+            background: #666; color: white; border: none; padding: 10px; width: 100%; 
+            margin-top: 20px; border-radius: 5px; font-size: 18px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-area">
+        <div id="ui-container">
+            <div class="score-board">נקודות: <span id="score">0</span></div>
+            <button id="start-btn" onclick="startGame()">התחל משחק</button>
+        </div>
+        
+        <div id="ball" style="display: none;">⚽</div>
+        
+        <div id="leaderboard">
+            <h3>🏆 טבלת שיאים</h3>
+            <ul id="high-score-list"></ul>
+            <button class="close-btn" onclick="document.getElementById('leaderboard').style.display='none'">סגור טבלה</button>
+        </div>
+    </div>
+
+    <script>
+        let score = 0;
+        let ballY = 0;
+        let speed = 2;
+        let gameLoop;
+        const hitSound = new Audio('hit.mp3');
+        const MAX_HIGH_SCORES = 5;
+        let highScores = JSON.parse(localStorage.getItem('headingHighScores')) || [];
+
+        const ball = document.getElementById('ball');
+        const scoreDisplay = document.getElementById('score');
+        const gameArea = document.getElementById('game-area');
+        const startBtn = document.getElementById('start-btn');
+        const leaderboard = document.getElementById('leaderboard');
+        const highScoreList = document.getElementById('high-score-list');
+
+        // פונקציה להצגת טבלת השיאים
+        function showLeaderboard() {
+            highScoreList.innerHTML = highScores.map(entry => 
+                `<li><span>${entry.name}</span> <span style="color:#007A33; font-weight:bold;">${entry.score}</span></li>`
+            ).join('');
+            
+            if (highScores.length === 0) {
+                highScoreList.innerHTML = '<li><span style="color: gray; font-size: 16px; text-align:center; display:block;">עדיין אין שיאים.</span></li>';
+            }
+            leaderboard.style.display = 'block';
+        }
+
+        // הצגת הטבלה מיד בפתיחת המשחק
+        showLeaderboard();
+
+        function startGame() {
+            score = 0;
+            speed = 3;
+            scoreDisplay.innerText = score;
+            startBtn.style.display = 'none';
+            leaderboard.style.display = 'none'; // הסתרת הטבלה בזמן משחק
+            ball.style.display = 'block';
+            
+            resetBall();
+            clearInterval(gameLoop);
+            gameLoop = setInterval(updateGame, 20);
+        }
+
+        function updateGame() {
+            ballY += speed;
+            ball.style.top = ballY + 'px';
+
+            if (ballY > gameArea.offsetHeight - ball.offsetHeight) {
+                gameOver();
+            }
+        }
+
+        function resetBall() {
+            ballY = 0;
+            const maxX = gameArea.offsetWidth - ball.offsetWidth;
+            const randomX = Math.floor(Math.random() * maxX);
+            ball.style.left = randomX + 'px';
+            ball.style.transform = 'none'; 
+        }
+
+        ball.addEventListener('mousedown', hitBall);
+        ball.addEventListener('touchstart', function(e) {
+            e.preventDefault();
+            hitBall();
+        });
+
+        function hitBall() {
+            hitSound.currentTime = 0.1; // דילוג על השקט בתחילת הקובץ
+            hitSound.play().catch(e => console.log('Audio error:', e)); 
+            
+            score++;
+            scoreDisplay.innerText = score;
+            speed += 0.5; 
+            resetBall();
+        }
+
+        function gameOver() {
+            clearInterval(gameLoop);
+            ball.style.display = 'none';
+            startBtn.style.display = 'inline-block';
+            startBtn.innerText = 'שחק שוב';
+
+            setTimeout(() => {
+                checkHighScore(score);
+            }, 100);
+        }
+
+        function checkHighScore(finalScore) {
+            const lowestScore = highScores[MAX_HIGH_SCORES - 1]?.score || 0;
+
+            if (finalScore > 0 && (finalScore > lowestScore || highScores.length < MAX_HIGH_SCORES)) {
+                const playerName = prompt(`משחק מצוין! השגת ${finalScore} נקודות.\nהכנס את שמך לטבלת השיאים:`);
+                
+                if (playerName && playerName.trim() !== "") {
+                    const newScore = { score: finalScore, name: playerName.trim() };
+                    highScores.push(newScore);
+                    highScores.sort((a, b) => b.score - a.score);
+                    highScores.splice(MAX_HIGH_SCORES);
+                    localStorage.setItem('headingHighScores', JSON.stringify(highScores));
+                }
+            } else {
+                alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
+            }
+            showLeaderboard(); // חזרה להצגת הטבלה בסיום
+        }
+    </script>
+</body>
+</html>

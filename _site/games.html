@@ -74,249 +74,44 @@
 
     <main>
         <style>
-    #game-container {
+    .game-launcher {
         text-align: center;
-        margin-top: 10px;
-    }
-    
-    .score-board {
-        font-size: 24px;
-        font-weight: bold;
-        margin-bottom: 15px;
-        color: var(--maccabi-green);
-    }
-
-    #game-area {
-        width: 100%;
-        max-width: 400px;
-        height: 500px;
-        background-color: #e9ecef;
-        position: relative;
-        margin: 0 auto;
-        overflow: hidden;
-        border: 4px solid var(--maccabi-green);
+        margin: 50px auto;
+        padding: 30px;
+        background-color: #f9f9f9;
+        border: 2px dashed #007A33;
         border-radius: 10px;
-        box-shadow: inset 0 0 15px rgba(0,0,0,0.1);
-        touch-action: none;
+        max-width: 500px;
     }
 
-    #ball {
-        font-size: 50px;
-        position: absolute;
-        top: 0;
-        left: 50%;
-        cursor: pointer;
-        user-select: none;
-        transition: transform 0.1s;
-    }
-
-    #ball:active {
-        transform: scale(0.8);
-    }
-
-    #start-btn {
-        background-color: var(--maccabi-green);
+    .launch-btn {
+        display: inline-block;
+        background-color: #007A33;
         color: white;
-        border: none;
-        padding: 10px 20px;
-        font-size: 18px;
-        cursor: pointer;
-        border-radius: 5px;
-        margin-bottom: 20px;
-    }
-
-    #start-btn:hover {
-        background-color: #005a25;
-    }
-
-    #leaderboard {
-        margin: 30px auto;
-        max-width: 300px;
-        background: white;
-        padding: 15px;
+        text-decoration: none;
+        padding: 15px 30px;
+        font-size: 22px;
+        font-weight: bold;
         border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-        text-align: right;
+        margin-top: 20px;
+        transition: transform 0.2s, background-color 0.2s;
     }
 
-    #leaderboard h3 {
-        color: var(--maccabi-green);
-        text-align: center;
-        margin-top: 0;
-    }
-
-    #high-score-list {
-        list-style-type: none;
-        padding: 0;
-        margin: 0;
-    }
-
-    #high-score-list li {
-        padding: 8px 0;
-        border-bottom: 1px solid #eee;
-        display: flex;
-        justify-content: space-between;
-        font-size: 18px;
-    }
-
-    #high-score-list li:last-child {
-        border-bottom: none;
-    }
-
-    .score-name { font-weight: bold; }
-    .score-val { color: var(--maccabi-green); font-weight: bold; }
-
-    @media (max-width: 768px) {
-        main {
-            width: 100% !important;
-            max-width: 100% !important;
-            margin: 0 !important;
-            padding: 10px 0 !important;
-            border-radius: 0 !important;
-            box-shadow: none !important;
-        }
-
-        #game-area {
-            height: 65vh;
-            max-width: 100%;
-            border-left: none;
-            border-right: none;
-            border-radius: 0;
-        }
-
-        h1, p {
-            padding: 0 10px;
-        }
+    .launch-btn:hover {
+        background-color: #005a25;
+        text-decoration: none;
+        transform: scale(1.05);
     }
 </style>
 
-<h1>משחק נגיחות</h1>
-<p>לחץ על הכדור לפני שהוא פוגע ברצפה!</p>
+<h1>משחקים</h1>
+<p>כאן תוכלו למצוא את המשחקים שגל בנה.</p>
 
-<div id="game-container">
-    <button id="start-btn" onclick="startGame()">התחל משחק</button>
-    
-    <div class="score-board">
-        נקודות: <span id="score">0</span>
-    </div>
-
-    <div id="game-area">
-        <div id="ball" style="display: none;">⚽</div>
-    </div>
-
-    <div id="leaderboard">
-        <h3>🏆 טבלת שיאים</h3>
-        <ul id="high-score-list"></ul>
-    </div>
+<div class="game-launcher">
+    <h2>משחק נגיחות</h2>
+    <p>בדקו את זריזות האצבעות שלכם! לחצו על הכדור לפני שהוא פוגע ברצפה.</p>
+    <a href="play-game.html" target="_blank" class="launch-btn">🎮 פתח משחק במסך מלא</a>
 </div>
-
-<script>
-    let score = 0;
-    let ballY = 0;
-    let speed = 2;
-    let gameLoop;
-    
-    // הגדרת קובץ השמע המקומי
-    const hitSound = new Audio('hit.mp3');
-    
-    const MAX_HIGH_SCORES = 5;
-    let highScores = JSON.parse(localStorage.getItem('headingHighScores')) || [];
-
-    const ball = document.getElementById('ball');
-    const scoreDisplay = document.getElementById('score');
-    const gameArea = document.getElementById('game-area');
-    const startBtn = document.getElementById('start-btn');
-    const highScoreList = document.getElementById('high-score-list');
-
-    renderLeaderboard();
-
-    function startGame() {
-        score = 0;
-        speed = 3;
-        scoreDisplay.innerText = score;
-        startBtn.style.display = 'none';
-        ball.style.display = 'block';
-        
-        resetBall();
-        
-        clearInterval(gameLoop);
-        gameLoop = setInterval(updateGame, 20);
-    }
-
-    function updateGame() {
-        ballY += speed;
-        ball.style.top = ballY + 'px';
-
-        if (ballY > gameArea.offsetHeight - ball.offsetHeight) {
-            gameOver();
-        }
-    }
-
-    function resetBall() {
-        ballY = 0;
-        const maxX = gameArea.offsetWidth - ball.offsetWidth;
-        const randomX = Math.floor(Math.random() * maxX);
-        ball.style.left = randomX + 'px';
-        ball.style.transform = 'none'; 
-    }
-
-    ball.addEventListener('mousedown', hitBall);
-    ball.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        hitBall();
-    });
-
-    function hitBall() {
-        // ניגון הסאונד
-        hitSound.currentTime = 0; // איפוס להתחלה במקרה של לחיצות מהירות
-        hitSound.play().catch(e => console.log('Audio error:', e)); // catch מונע שגיאות בדפדפנים שחוסמים סאונד אוטומטי
-        
-        score++;
-        scoreDisplay.innerText = score;
-        speed += 0.5; 
-        resetBall();
-    }
-
-    function gameOver() {
-        clearInterval(gameLoop);
-        ball.style.display = 'none';
-        startBtn.style.display = 'inline-block';
-        startBtn.innerText = 'שחק שוב';
-
-        setTimeout(() => {
-            checkHighScore(score);
-        }, 100);
-    }
-
-    function checkHighScore(finalScore) {
-        const lowestScore = highScores[MAX_HIGH_SCORES - 1]?.score || 0;
-
-        if (finalScore > 0 && (finalScore > lowestScore || highScores.length < MAX_HIGH_SCORES)) {
-            const playerName = prompt(`משחק מצוין! השגת ${finalScore} נקודות ונכנסת לטבלת השיאים.\nאיך קוראים לך?`);
-            
-            if (playerName && playerName.trim() !== "") {
-                const newScore = { score: finalScore, name: playerName.trim() };
-                highScores.push(newScore);
-                highScores.sort((a, b) => b.score - a.score);
-                highScores.splice(MAX_HIGH_SCORES);
-                localStorage.setItem('headingHighScores', JSON.stringify(highScores));
-                renderLeaderboard();
-            }
-        } else {
-            alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
-        }
-    }
-
-    function renderLeaderboard() {
-        highScoreList.innerHTML = highScores.map(entry => 
-            `<li><span class="score-name">${entry.name}</span> <span class="score-val">${entry.score}</span></li>`
-        ).join('');
-        
-        if (highScores.length === 0) {
-            highScoreList.innerHTML = '<li><span style="color: gray; font-size: 14px;">עדיין אין שיאים. שחקו כדי להוביל!</span></li>';
-        }
-    }
-</script>
     </main>
 
     <footer>
