@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>משחק נגיחות</title>
     
-    <link rel="stylesheet" href="assets/css/game-style.css">
+    <link rel="stylesheet" href="./assets/css/game-style.css">
 </head>
 <body>
 
@@ -37,7 +37,18 @@
         gameOverSound.volume = 0.3; 
         
         const MAX_HIGH_SCORES = 5;
-        let highScores = JSON.parse(localStorage.getItem('headingHighScores')) || [];
+        let highScores = [];
+
+        // בלוק הגנה - מונע קריסה אם הזיכרון המקומי ריק או פגום
+        try {
+            const storedScores = localStorage.getItem('headingHighScores');
+            if (storedScores) {
+                highScores = JSON.parse(storedScores);
+            }
+        } catch (error) {
+            console.warn("שגיאה בטעינת טבלת שיאים, מאפס טבלה.");
+            highScores = [];
+        }
 
         const ball = document.getElementById('ball');
         const scoreDisplay = document.getElementById('score');
@@ -47,6 +58,8 @@
         const highScoreList = document.getElementById('high-score-list');
 
         function showLeaderboard() {
+            if (!highScoreList) return;
+            
             highScoreList.innerHTML = highScores.map(entry => 
                 `<li><span>${entry.name}</span> <span style="color:#007A33; font-weight:bold;">${entry.score}</span></li>`
             ).join('');
@@ -57,7 +70,10 @@
             leaderboard.style.display = 'block';
         }
 
-        showLeaderboard();
+        // מבטיח שהטבלה תוצג רק אחרי שהדף כולו נטען לחלוטין
+        window.onload = () => {
+            showLeaderboard();
+        };
 
         function startGame() {
             score = 0;
@@ -97,7 +113,7 @@
 
         function hitBall() {
             hitSound.currentTime = 0; 
-            hitSound.play().catch(e => console.log('Audio error:', e)); 
+            hitSound.play().catch(e => console.log('Audio warning:', e)); 
             
             score++;
             scoreDisplay.innerText = score;
@@ -112,7 +128,7 @@
             startBtn.innerText = 'שחק שוב';
 
             gameOverSound.currentTime = 0;
-            gameOverSound.play().catch(e => console.log('Audio error:', e));
+            gameOverSound.play().catch(e => console.log('Audio warning:', e));
 
             setTimeout(() => {
                 checkHighScore(score);
@@ -130,7 +146,12 @@
                     highScores.push(newScore);
                     highScores.sort((a, b) => b.score - a.score);
                     highScores.splice(MAX_HIGH_SCORES);
-                    localStorage.setItem('headingHighScores', JSON.stringify(highScores));
+                    
+                    try {
+                        localStorage.setItem('headingHighScores', JSON.stringify(highScores));
+                    } catch (e) {
+                        console.warn("לא ניתן היה לשמור שיא בזיכרון המקומי.");
+                    }
                 }
             } else {
                 alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
