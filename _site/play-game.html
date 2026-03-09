@@ -1,139 +1,177 @@
-<script>
-    let score = 0;
-    let ballY = 0;
-    let speed = 2;
-    let gameLoop;
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>משחק נגיחות</title>
     
-    const hitSound = new Audio('hit.mp3');
-    hitSound.volume = 1.0; 
+    <link rel="stylesheet" href="assets/css/game-style.css">
     
-    const gameOverSound = new Audio('gameover.mp3');
-    gameOverSound.volume = 0.3; 
-    
-    const MAX_HIGH_SCORES = 5;
-    let highScores = [];
-
-    // מנגנון הגנה: מונע קריסה של הסקריפט אם המידע ב-localStorage פגום
-    try {
-        const storedScores = localStorage.getItem('headingHighScores');
-        if (storedScores && storedScores !== "undefined") {
-            highScores = JSON.parse(storedScores);
-        }
-    } catch (error) {
-        console.warn("שגיאה בפענוח נתוני השיאים, מאתחל טבלה.");
-        highScores = [];
-    }
-
-    const ball = document.getElementById('ball');
-    const scoreDisplay = document.getElementById('score');
-    const gameArea = document.getElementById('game-area');
-    const startBtn = document.getElementById('start-btn');
-    const leaderboard = document.getElementById('leaderboard');
-    const highScoreList = document.getElementById('high-score-list');
-
-    function showLeaderboard() {
-        if (!highScoreList) return;
+    <style>
+        /* סגנונות גיבוי: ימנעו מסך לבן אם קובץ ה-CSS נכשל בטעינה */
+        body, html { background-color: #333; color: #fff; margin: 0; padding: 0; font-family: sans-serif; }
+        #game-area { width: 100vw; height: 100vh; position: relative; overflow: hidden; }
+        #ui-container { text-align: center; padding-top: 10vh; position: relative; z-index: 10; }
+        #start-btn { padding: 15px 40px; font-size: 24px; cursor: pointer; background-color: #007A33; color: white; border: none; border-radius: 8px; }
+    </style>
+</head>
+<body>
+    <div id="game-area">
+        <div id="ui-container">
+            <div class="score-board" style="font-size: 32px; font-weight: bold; margin-bottom: 20px; text-shadow: 1px 1px 2px black;">נקודות: <span id="score">0</span></div>
+            <button id="start-btn">התחל משחק</button>
+        </div>
         
-        highScoreList.innerHTML = highScores.map(entry => 
-            `<li><span>${entry.name}</span> <span style="color:#007A33; font-weight:bold;">${entry.score}</span></li>`
-        ).join('');
+        <div id="ball" style="display: none; font-size: 70px; position: absolute; top: 0; left: 50%; cursor: pointer; user-select: none; z-index: 5;">⚽</div>
         
-        if (highScores.length === 0) {
-            highScoreList.innerHTML = '<li><span style="color: gray; font-size: 16px; text-align:center; display:block;">עדיין אין שיאים.</span></li>';
-        }
-        leaderboard.style.display = 'block';
-    }
+        <div id="leaderboard" style="display: none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #f9f9f9; color: #333; padding: 25px; border-radius: 12px; z-index: 20; text-align: right; border: 3px solid #007A33;">
+            <h3 style="color: #007A33; text-align: center; margin-top: 0;">🏆 טבלת שיאים</h3>
+            <ul id="high-score-list" style="list-style: none; padding: 0; margin: 0;"></ul>
+            <button id="close-btn" style="margin-top: 20px; padding: 10px; width: 100%; cursor: pointer; background: #666; color: white; border: none; border-radius: 5px;">סגור טבלה</button>
+        </div>
+    </div>
 
-    // מבטיח שהטבלה תוצג רק לאחר טעינת כל האלמנטים בדף
-    window.onload = () => {
-        showLeaderboard();
-    };
-
-    function startGame() {
-        score = 0;
-        speed = 3;
-        scoreDisplay.innerText = score;
-        startBtn.style.display = 'none';
-        leaderboard.style.display = 'none'; 
-        ball.style.display = 'block';
-        
-        resetBall();
-        clearInterval(gameLoop);
-        gameLoop = setInterval(updateGame, 20);
-    }
-
-    function updateGame() {
-        ballY += speed;
-        ball.style.top = ballY + 'px';
-
-        if (ballY > gameArea.offsetHeight - ball.offsetHeight) {
-            gameOver();
-        }
-    }
-
-    function resetBall() {
-        ballY = 0;
-        const maxX = gameArea.offsetWidth - ball.offsetWidth;
-        const randomX = Math.floor(Math.random() * maxX);
-        ball.style.left = randomX + 'px';
-        ball.style.transform = 'none'; 
-    }
-
-    ball.addEventListener('mousedown', hitBall);
-    ball.addEventListener('touchstart', function(e) {
-        e.preventDefault();
-        hitBall();
-    });
-
-    function hitBall() {
-        try {
-            hitSound.currentTime = 0; 
-            hitSound.play().catch(e => console.log('Audio catch:', e)); 
-        } catch (e) {}
-        
-        score++;
-        scoreDisplay.innerText = score;
-        speed += 0.5; 
-        resetBall();
-    }
-
-    function gameOver() {
-        clearInterval(gameLoop);
-        ball.style.display = 'none';
-        startBtn.style.display = 'inline-block';
-        startBtn.innerText = 'שחק שוב';
-
-        try {
-            gameOverSound.currentTime = 0;
-            gameOverSound.play().catch(e => console.log('Audio catch:', e));
-        } catch (e) {}
-
-        setTimeout(() => {
-            checkHighScore(score);
-        }, 500);
-    }
-
-    function checkHighScore(finalScore) {
-        const lowestScore = highScores[MAX_HIGH_SCORES - 1]?.score || 0;
-
-        if (finalScore > 0 && (finalScore > lowestScore || highScores.length < MAX_HIGH_SCORES)) {
-            const playerName = prompt(`משחק מצוין! השגת ${finalScore} נקודות.\nהכנס את שמך לטבלת השיאים:`);
+    <script>
+        // הבטחת טעינה מלאה של הדף לפני הפעלת המשחק
+        document.addEventListener('DOMContentLoaded', () => {
+            let score = 0;
+            let ballY = 0;
+            let speed = 2;
+            let gameLoop;
             
-            if (playerName && playerName.trim() !== "") {
-                const newScore = { score: finalScore, name: playerName.trim() };
-                highScores.push(newScore);
-                highScores.sort((a, b) => b.score - a.score);
-                highScores.splice(MAX_HIGH_SCORES);
+            const hitSound = new Audio('hit.mp3');
+            hitSound.volume = 1.0; 
+            
+            const gameOverSound = new Audio('gameover.mp3');
+            gameOverSound.volume = 0.3; 
+            
+            const MAX_HIGH_SCORES = 5;
+            let highScores = [];
+
+            try {
+                const storedScores = localStorage.getItem('headingHighScores');
+                if (storedScores && storedScores !== "undefined") {
+                    highScores = JSON.parse(storedScores);
+                }
+            } catch (error) {
+                console.warn("שגיאה בטעינת שיאים. מתחיל טבלה נקייה.");
+                highScores = [];
+            }
+
+            const ball = document.getElementById('ball');
+            const scoreDisplay = document.getElementById('score');
+            const gameArea = document.getElementById('game-area');
+            const startBtn = document.getElementById('start-btn');
+            const leaderboard = document.getElementById('leaderboard');
+            const highScoreList = document.getElementById('high-score-list');
+            const closeBtn = document.getElementById('close-btn');
+
+            startBtn.addEventListener('click', startGame);
+            closeBtn.addEventListener('click', () => { leaderboard.style.display = 'none'; });
+
+            function showLeaderboard() {
+                if (!highScoreList) return;
                 
-                try {
-                    localStorage.setItem('headingHighScores', JSON.stringify(highScores));
-                } catch (e) {
-                    console.warn("לא הצלחנו לשמור בזיכרון המקומי.");
+                highScoreList.innerHTML = highScores.map(entry => 
+                    `<li style="padding: 10px 0; border-bottom: 1px solid #ccc; display: flex; justify-content: space-between; font-size: 20px;"><span>${entry.name}</span> <span style="color:#007A33; font-weight:bold;">${entry.score}</span></li>`
+                ).join('');
+                
+                if (highScores.length === 0) {
+                    highScoreList.innerHTML = '<li><span style="color: gray; display:block; text-align:center;">עדיין אין שיאים.</span></li>';
+                }
+                leaderboard.style.display = 'block';
+            }
+
+            showLeaderboard();
+
+            function startGame() {
+                score = 0;
+                speed = 3;
+                scoreDisplay.innerText = score;
+                startBtn.style.display = 'none';
+                leaderboard.style.display = 'none'; 
+                ball.style.display = 'block';
+                
+                resetBall();
+                clearInterval(gameLoop);
+                gameLoop = setInterval(updateGame, 20);
+            }
+
+            function updateGame() {
+                ballY += speed;
+                ball.style.top = ballY + 'px';
+
+                if (ballY > gameArea.offsetHeight - ball.offsetHeight) {
+                    gameOver();
                 }
             }
-        } else {
-            alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
-        }
-        showLeaderboard(); 
-    }
-</script>
+
+            function resetBall() {
+                ballY = 0;
+                const maxX = gameArea.offsetWidth - ball.offsetWidth;
+                const randomX = Math.floor(Math.random() * maxX);
+                ball.style.left = randomX + 'px';
+                ball.style.transform = 'none'; 
+            }
+
+            ball.addEventListener('mousedown', hitBall);
+            ball.addEventListener('touchstart', function(e) {
+                e.preventDefault();
+                hitBall();
+            }, {passive: false});
+
+            function hitBall() {
+                try {
+                    hitSound.currentTime = 0; 
+                    hitSound.play().catch(e => {}); 
+                } catch (e) {}
+                
+                score++;
+                scoreDisplay.innerText = score;
+                speed += 0.5; 
+                resetBall();
+            }
+
+            function gameOver() {
+                clearInterval(gameLoop);
+                ball.style.display = 'none';
+                startBtn.style.display = 'inline-block';
+                startBtn.innerText = 'שחק שוב';
+
+                try {
+                    gameOverSound.currentTime = 0;
+                    gameOverSound.play().catch(e => {});
+                } catch (e) {}
+
+                setTimeout(() => {
+                    checkHighScore(score);
+                }, 500);
+            }
+
+            function checkHighScore(finalScore) {
+                const lowestScore = highScores[MAX_HIGH_SCORES - 1]?.score || 0;
+
+                if (finalScore > 0 && (finalScore > lowestScore || highScores.length < MAX_HIGH_SCORES)) {
+                    const playerName = prompt(`משחק מצוין! השגת ${finalScore} נקודות.\nהכנס את שמך לטבלת השיאים:`);
+                    
+                    if (playerName && playerName.trim() !== "") {
+                        const newScore = { score: finalScore, name: playerName.trim() };
+                        highScores.push(newScore);
+                        highScores.sort((a, b) => b.score - a.score);
+                        highScores.splice(MAX_HIGH_SCORES);
+                        
+                        try {
+                            localStorage.setItem('headingHighScores', JSON.stringify(highScores));
+                        } catch (e) {
+                            console.warn("לא הצלחנו לשמור בזיכרון המקומי.");
+                        }
+                    }
+                } else {
+                    alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
+                }
+                showLeaderboard(); 
+            }
+        });
+    </script>
+</body>
+</html>
