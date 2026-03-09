@@ -1,163 +1,139 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>משחק נגיחות</title>
+<script>
+    let score = 0;
+    let ballY = 0;
+    let speed = 2;
+    let gameLoop;
     
-    <link rel="stylesheet" href="./assets/css/game-style.css">
-</head>
-<body>
+    const hitSound = new Audio('hit.mp3');
+    hitSound.volume = 1.0; 
+    
+    const gameOverSound = new Audio('gameover.mp3');
+    gameOverSound.volume = 0.3; 
+    
+    const MAX_HIGH_SCORES = 5;
+    let highScores = [];
 
-    <div id="game-area">
-        <div id="ui-container">
-            <div class="score-board">נקודות: <span id="score">0</span></div>
-            <button id="start-btn" onclick="startGame()">התחל משחק</button>
-        </div>
-        
-        <div id="ball" style="display: none;">⚽</div>
-        
-        <div id="leaderboard">
-            <h3>🏆 טבלת שיאים</h3>
-            <ul id="high-score-list"></ul>
-            <button class="close-btn" onclick="document.getElementById('leaderboard').style.display='none'">סגור טבלה</button>
-        </div>
-    </div>
+    // מנגנון הגנה: מונע קריסה של הסקריפט אם המידע ב-localStorage פגום
+    try {
+        const storedScores = localStorage.getItem('headingHighScores');
+        if (storedScores && storedScores !== "undefined") {
+            highScores = JSON.parse(storedScores);
+        }
+    } catch (error) {
+        console.warn("שגיאה בפענוח נתוני השיאים, מאתחל טבלה.");
+        highScores = [];
+    }
 
-    <script>
-        let score = 0;
-        let ballY = 0;
-        let speed = 2;
-        let gameLoop;
-        
-        const hitSound = new Audio('hit.mp3');
-        hitSound.volume = 1.0; 
-        
-        const gameOverSound = new Audio('gameover.mp3');
-        gameOverSound.volume = 0.3; 
-        
-        const MAX_HIGH_SCORES = 5;
-        let highScores = [];
+    const ball = document.getElementById('ball');
+    const scoreDisplay = document.getElementById('score');
+    const gameArea = document.getElementById('game-area');
+    const startBtn = document.getElementById('start-btn');
+    const leaderboard = document.getElementById('leaderboard');
+    const highScoreList = document.getElementById('high-score-list');
 
-        // בלוק הגנה - מונע קריסה אם הזיכרון המקומי ריק או פגום
+    function showLeaderboard() {
+        if (!highScoreList) return;
+        
+        highScoreList.innerHTML = highScores.map(entry => 
+            `<li><span>${entry.name}</span> <span style="color:#007A33; font-weight:bold;">${entry.score}</span></li>`
+        ).join('');
+        
+        if (highScores.length === 0) {
+            highScoreList.innerHTML = '<li><span style="color: gray; font-size: 16px; text-align:center; display:block;">עדיין אין שיאים.</span></li>';
+        }
+        leaderboard.style.display = 'block';
+    }
+
+    // מבטיח שהטבלה תוצג רק לאחר טעינת כל האלמנטים בדף
+    window.onload = () => {
+        showLeaderboard();
+    };
+
+    function startGame() {
+        score = 0;
+        speed = 3;
+        scoreDisplay.innerText = score;
+        startBtn.style.display = 'none';
+        leaderboard.style.display = 'none'; 
+        ball.style.display = 'block';
+        
+        resetBall();
+        clearInterval(gameLoop);
+        gameLoop = setInterval(updateGame, 20);
+    }
+
+    function updateGame() {
+        ballY += speed;
+        ball.style.top = ballY + 'px';
+
+        if (ballY > gameArea.offsetHeight - ball.offsetHeight) {
+            gameOver();
+        }
+    }
+
+    function resetBall() {
+        ballY = 0;
+        const maxX = gameArea.offsetWidth - ball.offsetWidth;
+        const randomX = Math.floor(Math.random() * maxX);
+        ball.style.left = randomX + 'px';
+        ball.style.transform = 'none'; 
+    }
+
+    ball.addEventListener('mousedown', hitBall);
+    ball.addEventListener('touchstart', function(e) {
+        e.preventDefault();
+        hitBall();
+    });
+
+    function hitBall() {
         try {
-            const storedScores = localStorage.getItem('headingHighScores');
-            if (storedScores) {
-                highScores = JSON.parse(storedScores);
-            }
-        } catch (error) {
-            console.warn("שגיאה בטעינת טבלת שיאים, מאפס טבלה.");
-            highScores = [];
-        }
-
-        const ball = document.getElementById('ball');
-        const scoreDisplay = document.getElementById('score');
-        const gameArea = document.getElementById('game-area');
-        const startBtn = document.getElementById('start-btn');
-        const leaderboard = document.getElementById('leaderboard');
-        const highScoreList = document.getElementById('high-score-list');
-
-        function showLeaderboard() {
-            if (!highScoreList) return;
-            
-            highScoreList.innerHTML = highScores.map(entry => 
-                `<li><span>${entry.name}</span> <span style="color:#007A33; font-weight:bold;">${entry.score}</span></li>`
-            ).join('');
-            
-            if (highScores.length === 0) {
-                highScoreList.innerHTML = '<li><span style="color: gray; font-size: 16px; text-align:center; display:block;">עדיין אין שיאים.</span></li>';
-            }
-            leaderboard.style.display = 'block';
-        }
-
-        // מבטיח שהטבלה תוצג רק אחרי שהדף כולו נטען לחלוטין
-        window.onload = () => {
-            showLeaderboard();
-        };
-
-        function startGame() {
-            score = 0;
-            speed = 3;
-            scoreDisplay.innerText = score;
-            startBtn.style.display = 'none';
-            leaderboard.style.display = 'none'; 
-            ball.style.display = 'block';
-            
-            resetBall();
-            clearInterval(gameLoop);
-            gameLoop = setInterval(updateGame, 20);
-        }
-
-        function updateGame() {
-            ballY += speed;
-            ball.style.top = ballY + 'px';
-
-            if (ballY > gameArea.offsetHeight - ball.offsetHeight) {
-                gameOver();
-            }
-        }
-
-        function resetBall() {
-            ballY = 0;
-            const maxX = gameArea.offsetWidth - ball.offsetWidth;
-            const randomX = Math.floor(Math.random() * maxX);
-            ball.style.left = randomX + 'px';
-            ball.style.transform = 'none'; 
-        }
-
-        ball.addEventListener('mousedown', hitBall);
-        ball.addEventListener('touchstart', function(e) {
-            e.preventDefault();
-            hitBall();
-        });
-
-        function hitBall() {
             hitSound.currentTime = 0; 
-            hitSound.play().catch(e => console.log('Audio warning:', e)); 
-            
-            score++;
-            scoreDisplay.innerText = score;
-            speed += 0.5; 
-            resetBall();
-        }
+            hitSound.play().catch(e => console.log('Audio catch:', e)); 
+        } catch (e) {}
+        
+        score++;
+        scoreDisplay.innerText = score;
+        speed += 0.5; 
+        resetBall();
+    }
 
-        function gameOver() {
-            clearInterval(gameLoop);
-            ball.style.display = 'none';
-            startBtn.style.display = 'inline-block';
-            startBtn.innerText = 'שחק שוב';
+    function gameOver() {
+        clearInterval(gameLoop);
+        ball.style.display = 'none';
+        startBtn.style.display = 'inline-block';
+        startBtn.innerText = 'שחק שוב';
 
+        try {
             gameOverSound.currentTime = 0;
-            gameOverSound.play().catch(e => console.log('Audio warning:', e));
+            gameOverSound.play().catch(e => console.log('Audio catch:', e));
+        } catch (e) {}
 
-            setTimeout(() => {
-                checkHighScore(score);
-            }, 500);
-        }
+        setTimeout(() => {
+            checkHighScore(score);
+        }, 500);
+    }
 
-        function checkHighScore(finalScore) {
-            const lowestScore = highScores[MAX_HIGH_SCORES - 1]?.score || 0;
+    function checkHighScore(finalScore) {
+        const lowestScore = highScores[MAX_HIGH_SCORES - 1]?.score || 0;
 
-            if (finalScore > 0 && (finalScore > lowestScore || highScores.length < MAX_HIGH_SCORES)) {
-                const playerName = prompt(`משחק מצוין! השגת ${finalScore} נקודות.\nהכנס את שמך לטבלת השיאים:`);
+        if (finalScore > 0 && (finalScore > lowestScore || highScores.length < MAX_HIGH_SCORES)) {
+            const playerName = prompt(`משחק מצוין! השגת ${finalScore} נקודות.\nהכנס את שמך לטבלת השיאים:`);
+            
+            if (playerName && playerName.trim() !== "") {
+                const newScore = { score: finalScore, name: playerName.trim() };
+                highScores.push(newScore);
+                highScores.sort((a, b) => b.score - a.score);
+                highScores.splice(MAX_HIGH_SCORES);
                 
-                if (playerName && playerName.trim() !== "") {
-                    const newScore = { score: finalScore, name: playerName.trim() };
-                    highScores.push(newScore);
-                    highScores.sort((a, b) => b.score - a.score);
-                    highScores.splice(MAX_HIGH_SCORES);
-                    
-                    try {
-                        localStorage.setItem('headingHighScores', JSON.stringify(highScores));
-                    } catch (e) {
-                        console.warn("לא ניתן היה לשמור שיא בזיכרון המקומי.");
-                    }
+                try {
+                    localStorage.setItem('headingHighScores', JSON.stringify(highScores));
+                } catch (e) {
+                    console.warn("לא הצלחנו לשמור בזיכרון המקומי.");
                 }
-            } else {
-                alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
             }
-            showLeaderboard(); 
+        } else {
+            alert(`המשחק נגמר! השגת ${finalScore} נקודות.`);
         }
-    </script>
-</body>
-</html>
+        showLeaderboard(); 
+    }
+</script>
