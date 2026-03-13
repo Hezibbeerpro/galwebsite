@@ -1,2 +1,10 @@
 title: האתר של גל
 encoding: utf-8
+
+# הגדרות נתיב חובה עבור יצירת מפת האתר
+url: "https://hezibbeerpro.github.io/galwebsite/"
+baseurl: "/galwebsite"
+
+# הפעלת התוסף האוטומטי
+plugins:
+  - jekyll-sitemaputf-8
